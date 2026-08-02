@@ -1,3 +1,5 @@
+import csv
+from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -89,3 +91,31 @@ def session_attendance(request, session_id):
     attendances = Attendance.objects.filter(session=session)
     serializer = AttendanceSerializer(attendances, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_attendance_csv(request, session_id):
+    try:
+        session = ClassSession.objects.get(id=session_id)
+    except ClassSession.DoesNotExist:
+        return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.role != 'teacher' or session.course.teacher != request.user:
+        return Response({"error": "Not authorized to export this."}, status=status.HTTP_403_FORBIDDEN)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendance_{session.course.code}_{session.token}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Student Email', 'Joined At', 'Distance (meters)', 'Within Geofence'])
+
+    attendances = Attendance.objects.filter(session=session)
+    for record in attendances:
+        writer.writerow([
+            record.student.email,
+            record.joined_at.strftime('%Y-%m-%d %H:%M:%S'),
+            round(record.distance_meters, 1),
+            'Yes' if record.within_geofence else 'No'
+        ])
+
+    return response
