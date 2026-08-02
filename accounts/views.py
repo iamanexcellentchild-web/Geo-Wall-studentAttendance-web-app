@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,9 +14,14 @@ def register(request):
     if serializer.is_valid():
         user = serializer.save()
         otp = OTP.objects.create(user=user, code=OTP.generate_code())
-        print(f"OTP for {user.email}: {otp.code}")
+        send_mail(
+    'Your Geotend Verification Code',
+    f'Your OTP code is: {otp.code}\n\nThis code will expire soon. If you did not request this, ignore this email.',
+    None,
+    [user.email],
+)
         return Response(
-            {"message": "Registered. Check console for OTP (email sending not wired up yet)."},
+            {"message": "Registered. Check your email for the OTP."},
             status=status.HTTP_201_CREATED
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -60,7 +66,12 @@ def resend_otp(request):
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
         otp = OTP.objects.create(user=user, code=OTP.generate_code())
-        print(f"Resent OTP for {user.email}: {otp.code}")
+        send_mail(
+    'Your Geotend Verification Code (Resent)',
+    f'Your new OTP code is: {otp.code}\n\nThis code will expire soon. If you did not request this, ignore this email.',
+    None,
+    [user.email],
+)
         return Response({"message": "OTP resent. Check console."}, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
