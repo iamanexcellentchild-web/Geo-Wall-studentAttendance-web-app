@@ -72,7 +72,7 @@ def resend_otp(request):
     None,
     [user.email],
 )
-        return Response({"message": "OTP resent. Check console."}, status=status.HTTP_200_OK)
+        return Response({"message": "OTP resent. Check your email."}, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(TokenObtainPairView):
