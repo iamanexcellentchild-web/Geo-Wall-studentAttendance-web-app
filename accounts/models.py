@@ -40,3 +40,6 @@ class OTP(models.Model):
         if elapsed >= cooldown_seconds:
             return True, 0
         return False, int(cooldown_seconds - elapsed)
+    def is_expired(self, expiry_minutes=10):
+        elapsed = (timezone.now() - self.created_at).total_seconds()
+        return elapsed > (expiry_minutes * 60)

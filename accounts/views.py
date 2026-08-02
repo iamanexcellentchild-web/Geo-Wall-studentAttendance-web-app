@@ -39,7 +39,9 @@ def verify_otp(request):
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         otp = OTP.objects.filter(user=user, code=code, is_used=False).order_by('-created_at').first()
         if not otp:
-            return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        if otp.is_expired():
+            return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
         otp.is_used = True
         otp.save()
         user.is_verified = True
