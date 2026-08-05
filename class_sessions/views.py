@@ -1,5 +1,6 @@
 import csv
 from django.http import HttpResponse
+from django.core.mail import send_mail
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -25,9 +26,20 @@ def start_session(request):
     serializer = ClassSessionSerializer(data=request.data)
     if serializer.is_valid():
         session = serializer.save(course=course)
+
+        enrolled_students = Enrollment.objects.filter(course=course).select_related('student')
+        for enrollment in enrolled_students:
+            send_mail(
+                f'Attendance Session Started: {course.code}',
+                f'A new attendance session has started for {course.title} ({course.code}).\n\n'
+                f'Join code: {session.token}\n\n'
+                f'This session expires at {session.expires_at.strftime("%H:%M")}.',
+                None,
+                [enrollment.student.email],
+            )
+
         return Response(ClassSessionSerializer(session).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

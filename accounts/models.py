@@ -43,3 +43,25 @@ class OTP(models.Model):
     def is_expired(self, expiry_minutes=10):
         elapsed = (timezone.now() - self.created_at).total_seconds()
         return elapsed > (expiry_minutes * 60)
+class PendingRegistration(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)  # stored hashed
+    role = models.CharField(max_length=10)
+    matric_or_staff_id = models.CharField(max_length=20, unique=True)
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_sent_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self, expiry_minutes=10):
+        elapsed = (timezone.now() - self.created_at).total_seconds()
+        return elapsed > (expiry_minutes * 60)
+
+    def can_resend(self, cooldown_seconds=60):
+        elapsed = (timezone.now() - self.last_sent_at).total_seconds()
+        if elapsed >= cooldown_seconds:
+            return True, 0
+        return False, int(cooldown_seconds - elapsed)
+
+    def __str__(self):
+        return f"Pending: {self.email}"
