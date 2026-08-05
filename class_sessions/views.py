@@ -56,9 +56,9 @@ def join_session(request):
     lng = serializer.validated_data['longitude']
 
     try:
-        session = ClassSession.objects.get(token=token)
+        session = ClassSession.objects.get(rotating_code=token)
     except ClassSession.DoesNotExist:
-        return Response({"error": "Invalid session token."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Invalid or expired QR code."}, status=status.HTTP_404_NOT_FOUND)
 
     if not session.is_active():
         return Response({"error": "This session has expired."}, status=status.HTTP_400_BAD_REQUEST)

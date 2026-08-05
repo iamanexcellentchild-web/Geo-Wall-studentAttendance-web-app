@@ -10,6 +10,7 @@ from courses.models import Course
 class ClassSession(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sessions')
     token = models.CharField(max_length=8, unique=True, blank=True)
+    rotating_code = models.CharField(max_length=8, blank=True, null=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     radius_meters = models.FloatField(default=50)
