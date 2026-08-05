@@ -131,3 +131,50 @@ def export_attendance_csv(request, session_id):
         ])
 
     return response
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def course_analytics(request, course_id):
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({"error": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.role != 'teacher' or course.teacher != request.user:
+        return Response({"error": "Not authorized to view this."}, status=status.HTTP_403_FORBIDDEN)
+
+    sessions = ClassSession.objects.filter(course=course)
+    total_sessions = sessions.count()
+
+    enrollments = Enrollment.objects.filter(course=course).select_related('student')
+    total_students = enrollments.count()
+
+    student_data = []
+    total_attended_all = 0
+
+    for enrollment in enrollments:
+        student = enrollment.student
+        attendances = Attendance.objects.filter(session__course=course, student=student)
+        sessions_attended = attendances.count()
+        flagged_count = attendances.filter(within_geofence=False).count()
+
+        attendance_rate = round((sessions_attended / total_sessions * 100), 1) if total_sessions > 0 else 0.0
+        total_attended_all += sessions_attended
+
+        student_data.append({
+            "email": student.email,
+            "sessions_attended": sessions_attended,
+            "attendance_rate": attendance_rate,
+            "flagged_count": flagged_count,
+        })
+
+    overall_attendance_rate = 0.0
+    if total_sessions > 0 and total_students > 0:
+        overall_attendance_rate = round((total_attended_all / (total_sessions * total_students) * 100), 1)
+
+    return Response({
+        "course": course.code,
+        "total_sessions": total_sessions,
+        "total_students": total_students,
+        "overall_attendance_rate": overall_attendance_rate,
+        "students": student_data,
+    })
