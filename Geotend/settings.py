@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
+GDAL_LIBRARY_PATH = r'C:\Users\DELL\AppData\Local\Programs\OSGeo4W\bin\gdal313.dll'
+os.environ['PATH'] = r'C:\Users\DELL\AppData\Local\Programs\OSGeo4W\bin' + os.pathsep + os.environ['PATH']
 """
 Django settings for Geotend project.
 
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'rest_framework',
     'accounts',
     'courses',
@@ -85,11 +88,14 @@ WSGI_APPLICATION = 'Geotend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'geotend_db',
+        'USER': 'postgres',
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

@@ -9,6 +9,9 @@ from django.utils import timezone
 from courses.models import Course, Enrollment
 from .models import ClassSession, Attendance, haversine_distance
 from .serializers import ClassSessionSerializer, JoinSessionSerializer, AttendanceSerializer
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
+from django.contrib.gis.db.models.functions import Distance as DistanceFunc
 
 
 @api_view(['POST'])
@@ -69,7 +72,11 @@ def join_session(request):
     if Attendance.objects.filter(session=session, student=request.user).exists():
         return Response({"error": "Already marked present for this session."}, status=status.HTTP_400_BAD_REQUEST)
 
-    distance = haversine_distance(session.latitude, session.longitude, lat, lng)
+    student_point = Point(lng, lat, srid=4326)
+    distance_obj = ClassSession.objects.filter(id=session.id).annotate(
+        dist=DistanceFunc('location', student_point)
+    ).first()
+    distance = distance_obj.dist.m
     within_geofence = distance <= session.radius_meters
 
     attendance = Attendance.objects.create(

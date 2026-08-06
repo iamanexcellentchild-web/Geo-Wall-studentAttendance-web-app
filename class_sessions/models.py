@@ -1,3 +1,6 @@
+from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -11,6 +14,7 @@ class ClassSession(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sessions')
     token = models.CharField(max_length=8, unique=True, blank=True)
     rotating_code = models.CharField(max_length=8, blank=True, null=True)
+    location = gis_models.PointField(geography=True, null=True, blank=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     radius_meters = models.FloatField(default=50)
@@ -18,6 +22,8 @@ class ClassSession(models.Model):
     expires_at = models.DateTimeField()
 
     def save(self, *args, **kwargs):
+        if self.latitude is not None and self.longitude is not None:
+            self.location = Point(self.longitude, self.latitude)
         if not self.token:
             self.token = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         if not self.expires_at:
